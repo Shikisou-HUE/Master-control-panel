@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reel Studios - Webhook Panel</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: #000;
+      color: #ccc;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #111;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-right: 1px solid #444;
+      user-select: text;
+    }
+
+    .sidebar button {
+      background-color: #2c2c2c;
+      color: #ddd;
+      border: none;
+      padding: 15px;
+      text-align: left;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #444;
+      user-select: none;
+    }
+
+    .sidebar button:hover {
+      background-color: #3a3a3a;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      opacity: 0.6;
+      color: silver;
+      user-select: text;
+    }
+
+    .content {
+      flex: 1;
+      padding: 40px;
+      position: relative;
+      background-color: #111;
+      user-select: text;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 500px;
+      height: 100px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #222;
+      color: #ddd;
+      border: 1px solid #555;
+      border-radius: 6px;
+      user-select: text;
+    }
+
+    .send {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #444;
+      color: white;
+      border: 1px solid #777;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .send:hover {
+      background-color: #555;
+    }
+
+    #status {
+      margin-top: 10px;
+      color: #6fdc6f;
+      user-select: text;
+    }
+
+    .top-right {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .lock-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: #000;  /* fully opaque black */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: white;
+      user-select: text;
+      pointer-events: all;
+    }
+
+    input {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #1b1b1b;
+      color: #ddd;
+      border: 1px solid #555;
+      border-radius: 5px;
+      user-select: text;
+    }
+
+    .admin-panel {
+      white-space: pre-wrap;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid #444;
+      user-select: text;
+    }
+
+    .admin-footer {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
+      opacity: 0.7;
+      color: #aaa;
+      user-select: text;
+    }
+
+    #miscPanel {
+      display: none;
+      padding: 20px;
+      background-color: #1a1a1a;
+      border-radius: 10px;
+      color: #ccc;
+      border: 1px solid #444;
+      user-select: text;
+    }
+
+    a {
+      color: #999;
+      text-decoration: none;
+      user-select: text;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <div class="lock-screen" id="lockScreen">
+    <h2>Locked</h2>
+    <p>Please enter your name and password to continue:</p>
+    <input type="text" id="username" placeholder="Your Name" /><br />
+    <input type="password" id="password" placeholder="Password" /><br />
+    <button onclick="unlock()">Unlock</button>
+  </div>
+
+  <div class="sidebar">
+    <div>
+      <button onclick="switchWebhook('Echos')">Echos of the machine</button>
+      <button onclick="switchWebhook('Lazers')">Lazers casino</button>
+      <button onclick="switchWebhook('Erlc')">Erlc California Discord server</button>
+      <button onclick="showMisc()">Misc</button>
+    </div>
+    <div class="footer">Reel Studios</div>
+  </div>
+
+  <div class="content">
+    <div class="top-right">
+      <button onclick="enterAdmin()">Administrator</button>
+    </div>
+
+    <div id="mainPanel" style="display:none;">
+      <h3 id="currentServerLabel"></h3>
+      <textarea id="message" placeholder="Type your message"></textarea><br />
+      <button class="send" onclick="sendMessage()">Send</button>
+      <div id="status"></div>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      <div class="admin-panel" id="adminLogs"></div>
+      <div class="admin-footer">Administrative Panel</div>
+    </div>
+
+    <div id="miscPanel">
+      <h3>Need help?</h3>
+      <p>
+        Got a problem? Join our Discord for assistance:
+        <a href="https://discord.gg/tBx5ptkPUF" target="_blank"
+          >https://discord.gg/tBx5ptkPUF</a
+        >
+      </p>
+      <p>This was developed as a Discord Security Project.<br />This is still in Alpha.</p>
+      <button onclick="hideMisc()">Back</button>
+    </div>
+  </div>
+
+  <script>
+    let currentWebhook = "";
+    let currentServerName = "";
+    let loginLogs = [];
+
+    window.onload = function () {
+      document.getElementById("lockScreen").style.display = "flex";
+    };
+
+    function switchWebhook(type) {
+      hideAll();
+      document.getElementById("mainPanel").style.display = "block";
+
+      if (type === "Echos") {
+        currentWebhook =
+          "https://discord.com/api/webhooks/1374331478585905162/E2n6SoOjdYZ1_1GAdI7iSXlwDGAo31y2h4EY0kleIsIlEn-CtUk8vn_fMUmq3s0tm5T5";
+        currentServerName = "Echos of the machine";
+      } else if (type === "Lazers") {
+        currentWebhook =
+          "https://discord.com/api/webhooks/1374349379036512256/Sy3SJFL5QkqupTf-5t6lrvWbg6tHoL3kmaE6sOb3TFHQK4Ym1P9Rl0n8k6qttRqjP1p4";
+        currentServerName = "Lazers casino";
+      } else if (type === "Erlc") {
+        currentWebhook =
+          "https://discord.com/api/webhooks/1374379292133163058/0DvOEVflgLmROn7cWS5urSDOgOjlCqSk_3oq1dUTxq7gy6qmJUPDaIOvRG6AtZHW3_Ew";
+        currentServerName = "Erlc California Discord server";
+      }
+
+      document.getElementById("currentServerLabel").innerText = currentServerName;
+      document.getElementById("status").innerText = "";
+    }
+
+    function sendMessage() {
+      const message = document.getElementById("message").value;
+      if (!currentWebhook || !message) return;
+
+      fetch(currentWebhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: message }),
+      });
+
+      document.getElementById("status").innerText = "Sent";
+      logAction(
+        `User "${document.getElementById("username").value}" sent message: "${message}" to ${currentServerName}`
+      );
+      document.getElementById("message").value = "";
+    }
+
+    function unlock() {
+      const name = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value;
+      if (!name) {
+        alert("Please enter your name.");
+        return;
+      }
+      if (pass === "Blaperture1") {
+        document.getElementById("lockScreen").style.display = "none";
+        logAction(`User "${name}" logged in.`);
+      } else {
+        alert("Incorrect password.");
+      }
+    }
+
+    function enterAdmin() {
+      const pass = prompt("Admin Password:");
+      if (pass === "Reel1") {
+        showAdmin();
+      } else {
+        alert("Access denied.");
+      }
+    }
+
+    function showAdmin() {
+      hideAll();
+      document.getElementById("adminPanel").style.display = "block";
+      document.getElementById("adminLogs").innerText =
+        loginLogs.join("\n") || "No activity logged.";
+    }
+
+    function logAction(text) {
+      const timestamp = new Date().toLocaleString();
+      loginLogs.push(`[${timestamp}] ${text}`);
+    }
+
+    function hideAll() {
+      document.getElementById("mainPanel").style.display = "none";
+      document.getElementById("adminPanel").style.display = "none";
+      document.getElementById("miscPanel").style.display = "none";
+    }
+
+    function showMisc() {
+      hideAll();
+      document.getElementById("miscPanel").style.display = "block";
+    }
+
+    function hideMisc() {
+      document.getElementById("miscPanel").style.display = "none";
+      // Optionally show main panel or keep hidden until webhook selected
+    }
+  </script>
+</body>
+</html>
